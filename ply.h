@@ -73,7 +73,10 @@ class ply : public entity{
                 float lookZ;//1.0 when Y-rotation = 0
 
                 void adjustModel(bool w);
+                void deformModel(float x, float y, Matrix transform);
         private:
+                VertexGraph vg;
+
                 /*      ===============================================
                         Desc: Helper function used in the constructor
                         =============================================== */ 

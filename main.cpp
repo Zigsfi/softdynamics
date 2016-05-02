@@ -21,7 +21,8 @@ int  silhouette = 1;
 int  filled = 1;
 int      rotY = 0;
 int  scale = 40;
-
+float mouseX;
+float mouseY;
 /* This is a textbox that we can edit, we
         use it to 
 */
@@ -34,6 +35,14 @@ string filenamePath = "cow.ply";
 ply* myPLY = new ply (filenamePath);
 
 /***************************************** myGlutIdle() ***********/
+void myMouse(int button, int state, int x, int y) {
+    float width = glutGet(GLUT_WINDOW_WIDTH);
+    float height = glutGet(GLUT_WINDOW_HEIGHT);
+    mouseX = (x/width) - 0.5;
+    mouseY = (1 - (y/height)) - 0.5;
+    Vector up(0, 1, 0);
+    myPLY->deformModel(mouseX, mouseY, rot_mat(up, DEG_TO_RAD(rotY)));
+}
 
 void myGlutIdle(void)
 {
@@ -92,6 +101,7 @@ void myGlutDisplay(void)
         //allow for user controlled rotation and scaling
         glScalef(scale / 100.0, scale / 100.0, scale / 100.0);
         glRotatef(rotY, 0.0, 1.0, 0.0);
+
         float rotRad = PI * (rotY / 180.0);
         myPLY->lookX = sinf(-rotRad);
         myPLY->lookZ = cosf(-rotRad);
@@ -108,7 +118,7 @@ void myGlutDisplay(void)
                 glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
         glEnd();
 
-        myPLY->adjustModel(wireframe);
+        //myPLY->adjustModel(wireframe);
 
         if (filled) {
                 glEnable(GL_LIGHTING);
@@ -221,6 +231,7 @@ int main(int argc, char* argv[])
         GLUI *glui = GLUI_Master.create_glui("GLUI");
 
         GLUI_Panel *render_panel = glui->add_panel("Render");
+        glutMouseFunc(myMouse);
         new GLUI_Checkbox(render_panel, "Wireframe", &wireframe);
         new GLUI_Checkbox(render_panel, "Filled", &filled);
         new GLUI_Checkbox(render_panel, "Silhouette", &silhouette);

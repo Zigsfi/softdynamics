@@ -15,8 +15,8 @@
 #include <math.h>
 #include "Algebra.h"
 
-#define KS 0.1
-#define KV 0.1
+#define KS 1
+#define KV 0
 #define GRAVITY 1
 #define M 1
 #define DT .01
@@ -209,6 +209,7 @@ void ply::loadGeometry(){
     centerForce = Vector();
     scaleAndCenter();
     findEdges();
+    vg.construct(vertexList, edgeList, vertexCount, edgeCount);
 };
 
 /*  ===============================================
@@ -289,6 +290,7 @@ void ply::render(){
             for(int j = 0; j < faceList[i].vertexCount; j++){
                                 // Get each vertices x,y,z and draw them
                 int index = faceList[i].vertexList[j];
+                glColor3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
                 glVertex3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
             }
         }
@@ -349,6 +351,10 @@ Vector ply::computeVolumeContribution(int index) {
     return fVec * KV;
 }
 
+void ply::deformModel(float x, float y, Matrix transform) {
+    int i = vg.pickVert(x, y);
+    vg.deform(i, transform * Vector(0, 0, -0.0005), 5);
+}
 void ply::adjustModel(bool w) {
     // For every edge, compute the force contributed by
     // the stretched or compressed edge
