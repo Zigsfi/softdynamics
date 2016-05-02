@@ -12,6 +12,7 @@
 #include <string>
 #include "geometry.h"
 #include "entity.h"
+#include "Algebra.h"
 
 using namespace std;
 
@@ -71,6 +72,7 @@ class ply : public entity{
                 float lookX;//0.0 when Y-rotation = 0
                 float lookZ;//1.0 when Y-rotation = 0
 
+                void adjustModel(bool w);
         private:
                 /*      ===============================================
                         Desc: Helper function used in the constructor
@@ -112,6 +114,17 @@ class ply : public entity{
                 //an array of linked lists representing edges
                 //the array is indexed by the lower-numbered vertex in the edge.
                 edge* edgeList;
+                Vector* forceList;
+                
+                Point asPoint(int i);
+                float findLen(int v1, int v2);
+                float findCenterLen(int i);
+                Vector computeEdgeContribution(edge e);
+                Vector computeVolumeContribution(int i);
+
+                vertex center;
+                Vector centerForce;
 };
+
 
 #endif

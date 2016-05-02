@@ -215,8 +215,8 @@ public:
 	}
 
 	double length() {
-		double d = sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
-		return d;
+		double d = (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+		return sqrt(d < 0 ? 0 : d);
 	};
 
 	void unpack(double* d) {

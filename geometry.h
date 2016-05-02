@@ -1,6 +1,8 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include "Algebra.h"
+
 /*  ============== Vertex ==============
 	Purpose: Stores properties of each vertex
 	Use: Used in face structure
@@ -8,6 +10,8 @@
 class vertex{
 public:
 	float x,y,z;		// position in 3D space
+    float centerLen;
+    Vector velocity;
 	float confidence;
 	float intensity;
 	float r,g,b;		// Color values
@@ -41,7 +45,8 @@ class edge{
 public:
         int vertices[2];
         int faces[2];
-        
+        float len;
+
         //default constructor
         edge(){
             //these are -1 because 0 would be a meaningful value
@@ -51,4 +56,5 @@ public:
             faces[1] = -1;
         }
 };
+
 #endif

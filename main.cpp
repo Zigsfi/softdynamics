@@ -20,13 +20,13 @@ int  wireframe = 0;
 int  silhouette = 1;
 int  filled = 1;
 int      rotY = 0;
-int  scale = 100;
+int  scale = 40;
 
 /* This is a textbox that we can edit, we
         use it to 
 */
 GLUI_EditText* filenameTextField = NULL;
-string filenamePath = "./data/dragon.ply";
+string filenamePath = "./data/bunny_low.ply";
 
 /****************************************/
 /*         PLY Object                   */
@@ -107,7 +107,9 @@ void myGlutDisplay(void)
                 glColor3f(0.0, 0.0, 1.0);
                 glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
         glEnd();
-        
+
+        myPLY->adjustModel(wireframe);
+
         if (filled) {
                 glEnable(GL_LIGHTING);
                 glEnable(GL_POLYGON_OFFSET_FILL);
