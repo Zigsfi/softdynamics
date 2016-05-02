@@ -15,11 +15,11 @@
 #include <math.h>
 #include "Algebra.h"
 
-#define KS 1
-#define KV 0
-#define G 0
+#define KS 0
+#define KV 0.1
+#define G 1
 #define M 1
-#define DT .000001
+#define DT .01
 
 using namespace std;
 
@@ -330,6 +330,7 @@ Vector ply::computeEdgeContribution(edge e) {
     int v2 = e.vertices[1];
 
     Vector d = asPoint(v2) - asPoint(v1);
+
     float x  = findLen(v1, v2) - e.len; 
 
     Vector fVec = d * x;
@@ -361,13 +362,20 @@ void ply::adjustModel(bool w) {
         int v1 = e.vertices[0];
         int v2 = e.vertices[1];
 
-        float be = -sqt(4 * M * KS);
-        float bv = -sqt(4 * M * KV);
+        float be = -sqrt(4 * M * KS);
+        float bv = -sqrt(4 * M * KV);
+
+        if (isnan(be)) be = 0;
+        if (isnan(bv)) bv = 0;
         
         Vector fVec  = computeEdgeContribution(e);
-        Vector fNorm = fVec / fVec.length();
+        Vector fNorm = fVec;
 
-        if (i == 0) cout << fVec.length(); //.print();
+        fNorm.normalize();
+
+        //if (i == 0) ; //.print();
+        if (!isnan(fVec.length())) 
+            cout << fVec.length() << endl;
 
         Vector v1SDamping = (be * (dot(vertexList[v1].velocity, fNorm) * fNorm));
         Vector v1VDamping = (bv * (dot(vertexList[v1].velocity, fNorm) * fNorm));
@@ -393,8 +401,8 @@ void ply::adjustModel(bool w) {
         forceList[v1] = forceList[v1] + (fVec  + v1SDamping) + (v1Vec + v1VDamping) + floorForce + fv;
         forceList[v2] = forceList[v2] + (-fVec + v2SDamping) + (v2Vec + v2VDamping) + floorForce + fv;
         
-        centerForce   = centerForce + (-v1Vec);// - (bv * (dot(center.velocity, fNorm) * fNorm))); 
-        centerForce   = centerForce + (-v2Vec);// - (bv * (dot(center.velocity, fNorm) * fNorm)));
+        centerForce   = centerForce + (-v1Vec - (bv * (dot(center.velocity, fNorm) * fNorm))); 
+        centerForce   = centerForce + (-v2Vec - (bv * (dot(center.velocity, fNorm) * fNorm)));
     }
     // Apply forces to vertices
     for (int i = 0; i < vertexCount; i++) {
@@ -417,7 +425,7 @@ void ply::adjustModel(bool w) {
         vertexList[i] = v;
 
         forceList[i] = Vector();
-    }/*
+    }
     // Apply center forces
     Vector fVec = centerForce + Vector(0, G, 0);
     Vector a    = fVec / (M * vertexCount);
@@ -431,7 +439,7 @@ void ply::adjustModel(bool w) {
     center.z   += d[2];
 
     center.velocity = vf;
-    centerForce = Vector();*/
+    centerForce = Vector();
 }
 
 //loads data structures so edges are known
