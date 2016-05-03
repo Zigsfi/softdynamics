@@ -74,6 +74,7 @@ class ply : public entity{
 
                 void adjustModel(bool w);
                 void deformModel(float x, float y, Matrix transform);
+                bool deformModel(Point p, float radius, Vector transform);
         private:
                 VertexGraph vg;
 

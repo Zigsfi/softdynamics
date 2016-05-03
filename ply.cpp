@@ -351,6 +351,18 @@ Vector ply::computeVolumeContribution(int index) {
     return fVec * KV;
 }
 
+bool ply::deformModel(Point p, float radius, Vector transform) {
+    auto vertices = vg.pickVerts(p, radius);
+
+    for (auto vert : vertices) {
+        vg.deform(vert, transform, 5);
+    }
+
+    if (vertices.size() > 0) {
+        return true;
+    }
+    return false;
+}
 void ply::deformModel(float x, float y, Matrix transform) {
     int i = vg.pickVert(x, y);
     vg.deform(i, transform * Vector(0, 0, -0.0005), 5);

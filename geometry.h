@@ -118,6 +118,18 @@ public:
         }
         return index;
     };
+    std::vector<int> pickVerts(Point p, float radius) { //return all vertices within radius of p
+        std::vector<int> verts;
+        for (int i = 0; i < nodeCount; i++) {
+            Point vp(vertexList[i].x, vertexList[i].y, vertexList[i].z);
+            Vector v = vp - p;
+            if (v.length() < radius) {
+                verts.push_back(i);
+            }
+            nodes[i].marked = false;
+        }
+        return verts;
+    };
 };
 
 /*  ============== Face ==============

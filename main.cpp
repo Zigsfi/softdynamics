@@ -13,14 +13,15 @@
 #include <math.h>
 #include "ply.h"
 #include "Algebra.h"
-
+#define RADIUS 0.05
 /** These are the live variables passed into GLUI ***/
 int main_window;
 int  wireframe = 0;
 int  silhouette = 1;
 int  filled = 1;
-int      rotY = 0;
+int  rotY = 0;
 int  scale = 40;
+float view_rotate[16] = { 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 };
 float mouseX;
 float mouseY;
 /* This is a textbox that we can edit, we
@@ -33,15 +34,25 @@ string filenamePath = "cow.ply";
 /*         PLY Object                   */
 /****************************************/
 ply* myPLY = new ply (filenamePath);
-
+Point spherePos;
+Vector sphereTrajectory;
 /***************************************** myGlutIdle() ***********/
 void myMouse(int button, int state, int x, int y) {
     float width = glutGet(GLUT_WINDOW_WIDTH);
     float height = glutGet(GLUT_WINDOW_HEIGHT);
     mouseX = (x/width) - 0.5;
     mouseY = (1 - (y/height)) - 0.5;
-    Vector up(0, 1, 0);
-    myPLY->deformModel(mouseX, mouseY, rot_mat(up, DEG_TO_RAD(rotY)));
+    Vector back(0, 0, 1);
+    //myPLY->deformModel(mouseX, mouseY, rot_mat(up, DEG_TO_RAD(rotY)))a
+
+    Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
+    sphereTrajectory = Vector(0, 0, 0);
+    sphereTrajectory[2] = -0.005;
+    sphereTrajectory = transform * sphereTrajectory;
+
+    spherePos = Point(0, 0, 0);
+    spherePos[2] = 0.7;
+    spherePos = transform * spherePos;
 }
 
 void myGlutIdle(void)
@@ -97,10 +108,17 @@ void myGlutDisplay(void)
         // Load the identify matrix which gives us a base for our object transformations
         // (i.e. this is the default state)
         glLoadIdentity();
-
         //allow for user controlled rotation and scaling
+        glMultMatrixf(view_rotate);
         glScalef(scale / 100.0, scale / 100.0, scale / 100.0);
         glRotatef(rotY, 0.0, 1.0, 0.0);
+        if (sphereTrajectory.length() > 0) {
+            glPushMatrix();
+                glTranslated(spherePos[0], spherePos[1], spherePos[2]);
+                glutWireSphere(RADIUS, 5, 5);
+            glPopMatrix(); 
+        }
+        glPushMatrix();
 
         float rotRad = PI * (rotY / 180.0);
         myPLY->lookX = sinf(-rotRad);
@@ -118,6 +136,10 @@ void myGlutDisplay(void)
                 glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
         glEnd();
 
+        spherePos = spherePos + sphereTrajectory;
+        if (myPLY->deformModel(spherePos, RADIUS, sphereTrajectory)) {
+            sphereTrajectory = Vector();
+        }
         //myPLY->adjustModel(wireframe);
 
         if (filled) {
@@ -141,7 +163,7 @@ void myGlutDisplay(void)
               glLineWidth(2);
               myPLY->renderSilhouette();
         }
-        
+        glPopMatrix();
         glutSwapBuffers();
 }
 
@@ -235,6 +257,7 @@ int main(int argc, char* argv[])
         new GLUI_Checkbox(render_panel, "Wireframe", &wireframe);
         new GLUI_Checkbox(render_panel, "Filled", &filled);
         new GLUI_Checkbox(render_panel, "Silhouette", &silhouette);
+        GLUI_Rotation *view_rot = new GLUI_Rotation(render_panel, "Objects", view_rotate );
 
         GLUI_Panel *camera_panel = glui->add_panel("Camera");
         (new GLUI_Spinner(camera_panel, "Rotate Y:", &rotY))->set_int_limits(0, 359);
