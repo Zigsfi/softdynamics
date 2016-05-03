@@ -247,9 +247,9 @@ void ply::scaleAndCenter() {
 
     // center and scale each vertex 
     for (i = 0; i < vertexCount; i++){
-        vertexList[i].x = (vertexList[i].x - avrg_x) / max;
-        vertexList[i].y = (vertexList[i].y - avrg_y) / max;
-        vertexList[i].z = (vertexList[i].z - avrg_z) / max;
+        vertexList[i].x = (vertexList[i].x - avrg_x) ;
+        vertexList[i].y = (vertexList[i].y - avrg_y) ;
+        vertexList[i].z = (vertexList[i].z - avrg_z) ;
     }
 
     center   = vertex();
@@ -290,7 +290,6 @@ void ply::render(){
             for(int j = 0; j < faceList[i].vertexCount; j++){
                                 // Get each vertices x,y,z and draw them
                 int index = faceList[i].vertexList[j];
-                glColor3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
                 glVertex3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
             }
         }
@@ -349,6 +348,19 @@ Vector ply::computeVolumeContribution(int index) {
 
     Vector fVec = d * x;
     return fVec * KV;
+}
+bool ply::deformModel(Point p1, Point p2, Vector transform) {
+    auto vertices = vg.pickVerts(p1, p2);
+
+    for (auto vert : vertices) {
+        vg.deform(vert, transform, 5);
+    }
+
+    if (vertices.size() > 0) {
+        return true;
+    }
+    return false;
+
 }
 
 bool ply::deformModel(Point p, float radius, Vector transform) {
