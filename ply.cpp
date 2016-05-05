@@ -15,11 +15,16 @@
 #include <math.h>
 #include "Algebra.h"
 
-#define KS 0
-#define KV 0.1
-#define G 1
+#define G -1
 #define M 1
-#define DT .01
+#define FD 1 
+#define FLOORY -1
+
+float KS = 5;
+float KV = 1;
+float DT = .0025;
+
+int numC = 0;
 
 using namespace std;
 
@@ -30,6 +35,7 @@ using namespace std;
       Postcondition: vertexList, faceList are filled in
     =============================================== */ 
 ply::ply(string _filePath){
+    //edges, if you want to use this data structure
         filePath = _filePath;
         vertexList = NULL;
         faceList = NULL;
@@ -207,16 +213,21 @@ void ply::loadGeometry(){
 
     forceList   = new Vector[vertexCount];
     centerForce = Vector();
-    scaleAndCenter();
+    scaleAndCenter(true);
     findEdges();
+    cout << edgeCount << endl;
+    cout << faceCount << endl;
 };
+
+
 
 /*  ===============================================
 Desc: Moves all the geometry so that the object is centered at 0, 0, 0 and scaled to be between 0.5 and -0.5
 Precondition: after all the vetices and faces have been loaded in
 Postcondition: points have reasonable values
 =============================================== */
-void ply::scaleAndCenter() {
+void ply::scaleAndCenter(bool move) {
+
     float avrg_x = 0.0;
     float avrg_y = 0.0;
     float avrg_z = 0.0;
@@ -232,9 +243,9 @@ void ply::scaleAndCenter() {
         avrg_z += vertexList[i].z;
 
         // obtain the max dimension to find the furthest point from 0,0
-        if (max < (vertexList[i].x)) max = (vertexList[i].x);
-        if (max < (vertexList[i].y)) max = (vertexList[i].y);
-        if (max < (vertexList[i].z)) max = (vertexList[i].z);
+        if (max < fabs(vertexList[i].x)) max = fabs(vertexList[i].x);
+        if (max < fabs(vertexList[i].y)) max = fabs(vertexList[i].y);
+        if (max < fabs(vertexList[i].z)) max = fabs(vertexList[i].z);
     }
     // compute the average for each property
     avrg_x = avrg_x / vertexCount;
@@ -244,11 +255,13 @@ void ply::scaleAndCenter() {
     // *******multiply the max by 2.5 to shrink the image to fit it into the 
     // given window dimensions. *******
 
-    // center and scale each vertex 
-    for (i = 0; i < vertexCount; i++){
-        vertexList[i].x = (vertexList[i].x - avrg_x) / max;
-        vertexList[i].y = (vertexList[i].y - avrg_y) / max;
-        vertexList[i].z = (vertexList[i].z - avrg_z) / max;
+    if (move) {
+        // center and scale each vertex 
+        for (i = 0; i < vertexCount; i++){
+            vertexList[i].x = (vertexList[i].x - avrg_x) / max;
+            vertexList[i].y = (vertexList[i].y - avrg_y) / max;
+            vertexList[i].z = (vertexList[i].z - avrg_z) / max;
+        }
     }
 
     center   = vertex();
@@ -273,6 +286,12 @@ void ply::render(){
     glPushMatrix();
     glTranslatef(getXPosition(),getYPosition(),getZPosition());
     glScalef(getXScale(),getYScale(),getZScale());
+/*
+    glPointSize(10);
+    glBegin(GL_POINTS);
+    glVertex3f(center.x, center.y, center.z);
+    glEnd();
+*/
     // For each of our faces
     glBegin(GL_TRIANGLES);
           for(int i = 0; i < faceCount; i++) {
@@ -330,6 +349,7 @@ Vector ply::computeEdgeContribution(edge e) {
     int v2 = e.vertices[1];
 
     Vector d = asPoint(v2) - asPoint(v1);
+//    d.normalize();
 
     float x  = findLen(v1, v2) - e.len; 
 
@@ -338,13 +358,13 @@ Vector ply::computeEdgeContribution(edge e) {
     return fVec * KS;
 }
 
-
 Vector ply::computeVolumeContribution(int index) {
     vertex v = vertexList[index];
     Vector d = Point(center.x, center.y, center.z) - asPoint(index);
+  //  d.normalize();
 
     float x = findCenterLen(index) - v.centerLen;
-
+    
     Vector fVec = d * x;
     return fVec * KV;
 }
@@ -352,7 +372,6 @@ Vector ply::computeVolumeContribution(int index) {
 void ply::adjustModel(bool w) {
     // For every edge, compute the force contributed by
     // the stretched or compressed edge
-
     for (int i = 0; i < edgeCount; i++) {
         float ft = 0;
         if (i < edgeCount / 2 && w) ft = 1;
@@ -365,44 +384,43 @@ void ply::adjustModel(bool w) {
         float be = -sqrt(4 * M * KS);
         float bv = -sqrt(4 * M * KV);
 
-        if (isnan(be)) be = 0;
-        if (isnan(bv)) bv = 0;
-        
         Vector fVec  = computeEdgeContribution(e);
         Vector fNorm = fVec;
 
         fNorm.normalize();
 
-        //if (i == 0) ; //.print();
-        if (!isnan(fVec.length())) 
-            cout << fVec.length() << endl;
-
-        Vector v1SDamping = (be * (dot(vertexList[v1].velocity, fNorm) * fNorm));
-        Vector v1VDamping = (bv * (dot(vertexList[v1].velocity, fNorm) * fNorm));
-        Vector v2SDamping = (be * (dot(vertexList[v2].velocity, fNorm) * fNorm));
-        Vector v2VDamping = (bv * (dot(vertexList[v2].velocity, fNorm) * fNorm));
-       /* 
-        if (v1SDamping != Vector() || v1VDamping != Vector()){ 
-            cout << "v1S: ";
-            v1SDamping.print();
-            fVec.print();
-            cout << " v1V: " ;
-            v1VDamping.print(); 
-            cout << endl;
-        }*/
-        
         Vector v1Vec = computeVolumeContribution(v1); 
         Vector v2Vec = computeVolumeContribution(v2); 
+        Vector v1Norm = v1Vec;
+        v1Norm.normalize();
+        Vector v2Norm = v2Vec;
+        v2Norm.normalize();
 
-        Vector floorForce = Vector(0, 0, 0);
-        //collide with floor
-        if (vertexList[v1].y < -1) floorForce = Vector(0, -G, 0);
-
-        forceList[v1] = forceList[v1] + (fVec  + v1SDamping) + (v1Vec + v1VDamping) + floorForce + fv;
-        forceList[v2] = forceList[v2] + (-fVec + v2SDamping) + (v2Vec + v2VDamping) + floorForce + fv;
+        Vector v1SDamping = (be * (dot(vertexList[v1].velocity,  fNorm) * fNorm));
+        Vector v1VDamping = (bv * (dot(vertexList[v1].velocity, v1Norm) * v1Norm));
+        Vector v2SDamping = (be * (dot(vertexList[v2].velocity, -fNorm) * (-fNorm)));
+        Vector v2VDamping = (bv * (dot(vertexList[v2].velocity, v2Norm) * (v2Norm)));
         
-        centerForce   = centerForce + (-v1Vec - (bv * (dot(center.velocity, fNorm) * fNorm))); 
-        centerForce   = centerForce + (-v2Vec - (bv * (dot(center.velocity, fNorm) * fNorm)));
+        //collide with floor
+        Vector v1FloorForce = Vector(0, 0, 0);
+        Vector v2FloorForce = Vector(0, 0, 0);
+        Vector v1v = vertexList[v1].velocity;
+        Vector v2v = vertexList[v2].velocity;
+        Vector  cFloorForce = Vector(0, 0, 0);
+        Vector  cv = center.velocity;
+
+        if (FD != 1) {
+            if (vertexList[v1].y < FLOORY) v1FloorForce = (1 - FD) * M * (-2 * v1v) / (DT);
+            if (vertexList[v2].y < FLOORY) v2FloorForce = (1 - FD) * M * (-2 * v2v) / (DT);
+            if (center.y < FLOORY)         cFloorForce  = (1 - FD) * M * (-2 * cv ) / (DT);
+        }
+
+        forceList[v1] = forceList[v1] + (fVec  + v1SDamping) + (v1Vec + v1VDamping) + v1FloorForce + fv;
+        forceList[v2] = forceList[v2] + (-fVec + v2SDamping) + (v2Vec + v2VDamping) + v2FloorForce + fv;
+
+        centerForce = centerForce - (v1Vec + v1VDamping); //+ (bv * (dot(center.velocity, -v1Norm) * (-v1Norm))); 
+        centerForce = centerForce - (v2Vec + v2VDamping); // (bv * (dot(center.velocity, -v2Norm) * (-v2Norm)));
+        centerForce = centerForce + cFloorForce; 
     }
     // Apply forces to vertices
     for (int i = 0; i < vertexCount; i++) {
@@ -410,7 +428,9 @@ void ply::adjustModel(bool w) {
         Vector g    = Vector (0, G, 0);
         Vector fVec = (forceList[i] + g);
 
-    //    if (i == 0) asPoint(i).print();
+        //fVec.print();
+        //cout << "pos: " << v.x << ", " << v.y << ", " << v.z << endl;
+        //if (fVec == g) {numC++; cout << numC << endl;}
 
         Vector a    = fVec / M;
         Vector vi   = v.velocity;
@@ -422,29 +442,95 @@ void ply::adjustModel(bool w) {
         v.z += d[2];
 
         v.velocity = vf;
-        vertexList[i] = v;
 
+        if (FD == 1) if (v.y < FLOORY){ v.y = FLOORY; v.velocity = Vector(); }
+
+        vertexList[i] = v;
         forceList[i] = Vector();
     }
     // Apply center forces
     Vector fVec = centerForce + Vector(0, G, 0);
-    Vector a    = fVec / (M * vertexCount);
+
+    /*fVec.print();
+    cout << "cpos: " << center.x << ", " << center.y << ", " << center.z << endl;
+    */
+    //if (fVec == Vector(0, G, 0)) {numC++; cout << numC << endl;}
+
+    Vector a    = fVec / M;
     Vector vi   = center.velocity;
     Vector vf   = vi + a * DT;
     Vector d    = vi * DT + .5 * DT * DT * a;
     
-    //std::cout << center.x << " ," << center.y << " ," << center.z << std::endl;
+    //cout << "DONE" << endl;
+    //Vector d = fVec * DT;
     center.x   += d[0];
     center.y   += d[1];
     center.z   += d[2];
 
     center.velocity = vf;
+
+    if (FD == 1) if (center.y < FLOORY){ center.y = FLOORY; center.velocity = Vector(); }
+
     centerForce = Vector();
 }
 
 //loads data structures so edges are known
+/*
 void ply::findEdges(){
-    //edges, if you want to use this data structure
+    edgeCount = 0;
+    edge** edge2dthing = new edge*[vertexCount];
+
+    for (int i = 0; i < vertexCount; i++) {
+        edge2dthing[i] = new edge[vertexCount];
+    }
+
+    edgeList = new edge[faceCount * 3];
+
+    for (int i = 0; i < faceCount; i++) {
+         for (int j = 0; j < 3; j++) {
+            edge e; 
+
+            int v1 = faceList[i].vertexList[j];
+            int v2 = faceList[i].vertexList[(j + 1) % 3];
+
+            if (v2 < v1) {
+                int temp = v2;
+                v2 = v1;
+                v1 = temp;
+            }
+
+            e.vertices[0] = v1;
+            e.vertices[1] = v2;
+            e.len  = findLen(v2, v1);
+            vertexList[v1].centerLen = findCenterLen(v1);
+            vertexList[v2].centerLen = findCenterLen(v2);
+            vertexList[v1].velocity  = Vector();
+            vertexList[v2].velocity  = Vector();
+
+            if (edge2dthing[e.vertices[0]][e.vertices[1]].vertices[0] == -1) {
+                e.faces[0] = i;
+                edge2dthing[e.vertices[0]][e.vertices[1]] = e;
+            } else {
+                edge2dthing[e.vertices[0]][e.vertices[1]].faces[1] = i;
+            }
+         }
+    }
+
+    for (int i = 0; i < vertexCount; i++) {
+        for (int j = 0; j < vertexCount; j++) {
+            edge e = edge2dthing[i][j];
+            if (e.vertices[0] != -1 && e.vertices[1] != -1) {
+                edgeList[edgeCount] = e;
+                edgeCount++;
+            }
+        }
+    }
+
+} 
+*/
+
+//loads data structures so edges are known
+void ply::findEdges(){
     //TODO add all the edges to the edgeList and make sure they have both faces
     edgeList = new edge[faceCount * 9];
 

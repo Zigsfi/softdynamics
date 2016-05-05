@@ -79,7 +79,7 @@ class ply : public entity{
                         =============================================== */ 
                 void loadGeometry();
                 //makes the points fit in the window
-                void scaleAndCenter();
+                void scaleAndCenter(bool b);
                 //calculates the normal, sends it to graphics card, 
                 //NOTE and stores it
                 void setNormal(int facenum, float x1, float y1, float z1,

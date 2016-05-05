@@ -17,16 +17,18 @@
 /** These are the live variables passed into GLUI ***/
 int main_window;
 int  wireframe = 0;
-int  silhouette = 1;
+int  silhouette = 0;
 int  filled = 1;
-int      rotY = 0;
-int  scale = 40;
+int  rotY = 0;
+int  scale = 25;
+
+#define FLOORY -1.5
 
 /* This is a textbox that we can edit, we
         use it to 
 */
 GLUI_EditText* filenameTextField = NULL;
-string filenamePath = "./data/bunny_low.ply";
+string filenamePath = "./data/sphere.ply";
 
 /****************************************/
 /*         PLY Object                   */
@@ -106,6 +108,10 @@ void myGlutDisplay(void)
                 glVertex3f(0, 0, 0); glVertex3f(0.0, 1.0, 0);
                 glColor3f(0.0, 0.0, 1.0);
                 glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
+                glColor3f(1.0, 1.0, 1.0);
+                glVertex3f(-10.0, FLOORY, 0.0); glVertex3f(10.0, FLOORY, 0.0);
+                glColor3f(1.0, 1.0, 1.0);
+                glVertex3f(0.0, FLOORY, -10.0); glVertex3f(0.0, FLOORY, 10.0);
         glEnd();
 
         myPLY->adjustModel(wireframe);

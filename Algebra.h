@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const double EPSILON = 1e-30;
+const double EPSILON = 1e-15;
 #define PI 3.1415926535897932384626433832795028841971693993751058209749445923
 #define RAD 0.0174532925199432954743716805978692718782
 #define DBL_MAX 1.7976931348623158e+308  //this defines the max double
