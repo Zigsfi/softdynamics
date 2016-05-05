@@ -13,15 +13,17 @@
 #include <math.h>
 #include "ply.h"
 #include "Algebra.h"
-#define RADIUS 0.5
 #define SPHERE 1
 #define CUBE 0
 /** These are the live variables passed into GLUI ***/
 int main_window;
 int  wireframe = 0;
-int  silhouette = 1;
+int  silhouette = 0;
 int  filled = 1;
 int  rotY = 0;
+int drop = true;
+float heightY = 3;
+float radius = 1;
 int  scale = 40;
 int objType = 0;
 float view_rotate[16] = { 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 };
@@ -55,14 +57,21 @@ void myMouse(int button, int state, int x, int y) {
     Vector back(0, 0, 1);
     //myPLY->deformModel(mouseX, mouseY, rot_mat(up, DEG_TO_RAD(rotY)))a
     if (objType == SPHERE) {
-        Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
-        sphereTrajectory = Vector(0, 0, 0);
-        sphereTrajectory[2] = -0.05;
-        sphereTrajectory = transform * sphereTrajectory;
+        if (!drop) {
+            Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
+            sphereTrajectory = Vector(0, 0, 0);
+            sphereTrajectory[2] = -0.05;
+            sphereTrajectory = transform * sphereTrajectory;
 
-        spherePos = Point(0, 0, 0);
-        spherePos[2] = 1.7;
-        spherePos = transform * spherePos;
+            spherePos = Point(0, 0, 0);
+            spherePos[2] = 1.7;
+            spherePos[1] = heightY;
+            spherePos = transform * spherePos;
+        } else {
+            sphereTrajectory = Vector(0, -0.05, 0);
+
+            spherePos = Point(mouseX, heightY, mouseY);
+        }
     }
     if (objType == CUBE) {
         Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
@@ -72,6 +81,7 @@ void myMouse(int button, int state, int x, int y) {
 
         cubePos = Point(0, 0, 0);
         cubePos[2] = 1.7;
+        cubePos[1] = heightY;
         cubePos = transform * spherePos;
 
     }
@@ -139,7 +149,7 @@ void myGlutDisplay(void)
                 glPushMatrix();
                 glTranslated(spherePos[0], spherePos[1], spherePos[2]);
                 glColor3f(1, 1, 0);
-                glutWireSphere(RADIUS, 5, 5);
+                glutWireSphere(radius, 5, 5);
                 glPopMatrix(); 
             }
         }
@@ -148,7 +158,7 @@ void myGlutDisplay(void)
                 glPushMatrix();
                 glTranslated(cubePos[0], cubePos[1], cubePos[2]);
                 glColor3f(1, 0, 1);
-                glutWireCube(RADIUS);
+                glutWireCube(radius);
                 glPopMatrix(); 
             }
 
@@ -158,7 +168,6 @@ void myGlutDisplay(void)
         float rotRad = PI * (rotY / 180.0);
         myPLY->lookX = sinf(-rotRad);
         myPLY->lookZ = cosf(-rotRad);
-        //cout<<"lookX: "<<myPLY->lookX<<"  lookZ: "<<myPLY->lookZ<<"\n";
 
         //draw the axes
         glLineWidth(1);
@@ -171,19 +180,27 @@ void myGlutDisplay(void)
         glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
         glEnd();
 
-        if (objType == CUBE) {
+        if (objType == CUBE && cubeTrajectory.length() > 0) {
             cubePos = cubePos + cubeTrajectory;
-            Vector r(RADIUS / 2, RADIUS / 2, RADIUS / 2); 
+            Vector r(radius / 2, radius / 2, radius / 2); 
             if (myPLY->deformModel(cubePos - r, cubePos + r, cubeTrajectory / 100)) {
-                cubeTrajectory = Vector();
+                cubeTrajectory = cubeTrajectory * 0.1;
             }
         }
 
-        if (objType == SPHERE) {
+        if (objType == SPHERE && sphereTrajectory.length() > 0) {
             spherePos = spherePos + sphereTrajectory;
-            if (myPLY->deformModel(spherePos, RADIUS, sphereTrajectory / 100)) {
-                sphereTrajectory = Vector();
+            if (myPLY->deformModel(spherePos, radius, sphereTrajectory / 100)) {
+                sphereTrajectory = sphereTrajectory * 0.1;
+                if (sphereTrajectory.length() < 0.0001) {
+                    sphereTrajectory = Vector();
+                } 
+            } else {
+                if (drop) {
+                    sphereTrajectory = sphereTrajectory + Vector(0, -0.01, 0);
+                }
             }
+
         }
         //myPLY->adjustModel(wireframe);
 
@@ -302,6 +319,7 @@ int main(int argc, char* argv[])
     new GLUI_Checkbox(render_panel, "Wireframe", &wireframe);
     new GLUI_Checkbox(render_panel, "Filled", &filled);
     new GLUI_Checkbox(render_panel, "Silhouette", &silhouette);
+    new GLUI_Checkbox(render_panel, "Drop", &drop);
 
     GLUI_Panel *camera_panel = glui->add_panel("Camera");
     GLUI_Rotation *view_rot = new GLUI_Rotation(camera_panel, "Objects", view_rotate );
@@ -311,6 +329,8 @@ int main(int argc, char* argv[])
 
 
     GLUI_Panel *obj_panel = glui->add_panel("Projectile Type");
+    new GLUI_Spinner(obj_panel, "Height Y:", &heightY);
+    new GLUI_Spinner(obj_panel, "Radius", &radius);
     GLUI_RadioGroup *group1 =
         glui->add_radiogroup_to_panel(obj_panel, (int*)(&objType), 3, callback_obj);
     glui->add_radiobutton_to_group(group1, "Cube");
