@@ -247,9 +247,9 @@ void ply::scaleAndCenter() {
 
     // center and scale each vertex 
     for (i = 0; i < vertexCount; i++){
-        vertexList[i].x = (vertexList[i].x - avrg_x) ;
-        vertexList[i].y = (vertexList[i].y - avrg_y) ;
-        vertexList[i].z = (vertexList[i].z - avrg_z) ;
+        vertexList[i].x = (vertexList[i].x - avrg_x) / max;
+        vertexList[i].y = (vertexList[i].y - avrg_y) / max;
+        vertexList[i].z = (vertexList[i].z - avrg_z) / max;
     }
 
     center   = vertex();

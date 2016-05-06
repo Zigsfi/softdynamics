@@ -23,7 +23,7 @@ int  filled = 1;
 int  rotY = 0;
 int drop = true;
 float heightY = 3;
-float radius = 1;
+float radius = 0.1;
 int  scale = 40;
 int objType = 0;
 float view_rotate[16] = { 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1 };
@@ -52,8 +52,8 @@ void callback_obj(int obj) {
 void myMouse(int button, int state, int x, int y) {
     float width = glutGet(GLUT_WINDOW_WIDTH);
     float height = glutGet(GLUT_WINDOW_HEIGHT);
-    mouseX = (x/width) - 0.5;
-    mouseY = (1 - (y/height)) - 0.5;
+    mouseX = ((x/width) - 0.5) * 3.0;
+    mouseY = -((1 - (y/height)) - 0.5) * 3.0;
     Vector back(0, 0, 1);
     //myPLY->deformModel(mouseX, mouseY, rot_mat(up, DEG_TO_RAD(rotY)))a
     if (objType == SPHERE) {
@@ -68,22 +68,26 @@ void myMouse(int button, int state, int x, int y) {
             spherePos[1] = heightY;
             spherePos = transform * spherePos;
         } else {
-            sphereTrajectory = Vector(0, -0.05, 0);
+            sphereTrajectory = Vector(0, -0.005, 0);
 
             spherePos = Point(mouseX, heightY, mouseY);
         }
     }
     if (objType == CUBE) {
-        Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
-        cubeTrajectory = Vector(0, 0, 0);
-        cubeTrajectory[2] = -0.05;
-        cubeTrajectory = transform * cubeTrajectory;
+        if (!drop) {
+            Matrix transform = rotY_mat(DEG_TO_RAD(-rotY));
+            cubeTrajectory = Vector(0, 0, 0);
+            cubeTrajectory[2] = -0.05;
+            cubeTrajectory = transform * cubeTrajectory;
 
-        cubePos = Point(0, 0, 0);
-        cubePos[2] = 1.7;
-        cubePos[1] = heightY;
-        cubePos = transform * spherePos;
-
+            cubePos = Point(0, 0, 0);
+            cubePos[2] = 1.7;
+            cubePos[1] = heightY;
+            cubePos = transform * spherePos;
+        } else {
+            cubeTrajectory = Vector(0, -0.005, 0);
+            cubePos = Point(mouseX, heightY, mouseY);
+        }
     }
 }
 
@@ -185,19 +189,24 @@ void myGlutDisplay(void)
             Vector r(radius / 2, radius / 2, radius / 2); 
             if (myPLY->deformModel(cubePos - r, cubePos + r, cubeTrajectory / 100)) {
                 cubeTrajectory = cubeTrajectory * 0.1;
+            } else {
+
+                if (drop) {
+                    cubeTrajectory = cubeTrajectory + Vector(0, -0.001, 0);
+                }
             }
         }
 
         if (objType == SPHERE && sphereTrajectory.length() > 0) {
             spherePos = spherePos + sphereTrajectory;
             if (myPLY->deformModel(spherePos, radius, sphereTrajectory / 100)) {
-                sphereTrajectory = sphereTrajectory * 0.1;
+                sphereTrajectory = sphereTrajectory * 0.01;
                 if (sphereTrajectory.length() < 0.0001) {
                     sphereTrajectory = Vector();
                 } 
             } else {
                 if (drop) {
-                    sphereTrajectory = sphereTrajectory + Vector(0, -0.01, 0);
+                    sphereTrajectory = sphereTrajectory + Vector(0, -0.001, 0);
                 }
             }
 
