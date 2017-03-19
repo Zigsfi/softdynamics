@@ -2,7 +2,7 @@ INC=-I /usr/local/include/GL
 FRM=-l glut -l GLUI -framework OpenGL -framework GLUT
 
 
-%.o : %.cpp
+%.o : %.cpp *.h
 	g++ -g -w -c -o $@ $<
 
 lab7 : entity.o main.o ply.o

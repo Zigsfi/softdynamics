@@ -15,9 +15,9 @@
 #include <math.h>
 #include "Algebra.h"
 
-#define KS 0
-#define KV 0.1
-#define G 1
+#define KS 1
+#define KV 0
+#define GRAVITY 1
 #define M 1
 #define DT .01
 
@@ -209,6 +209,7 @@ void ply::loadGeometry(){
     centerForce = Vector();
     scaleAndCenter();
     findEdges();
+    vg.construct(vertexList, edgeList, vertexCount, edgeCount);
 };
 
 /*  ===============================================
@@ -289,6 +290,7 @@ void ply::render(){
             for(int j = 0; j < faceList[i].vertexCount; j++){
                                 // Get each vertices x,y,z and draw them
                 int index = faceList[i].vertexList[j];
+                glColor3f(vertexList[index].x,fabs(vertexList[index].y),fabs(vertexList[index].z));
                 glVertex3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
             }
         }
@@ -348,7 +350,36 @@ Vector ply::computeVolumeContribution(int index) {
     Vector fVec = d * x;
     return fVec * KV;
 }
+bool ply::deformModel(Point p1, Point p2, Vector transform) {
+    auto vertices = vg.pickVerts(p1, p2);
 
+    for (auto vert : vertices) {
+        vg.deform(vert, transform, 5);
+    }
+
+    if (vertices.size() > 0) {
+        return true;
+    }
+    return false;
+
+}
+
+bool ply::deformModel(Point p, float radius, Vector transform) {
+    auto vertices = vg.pickVerts(p, radius);
+
+    for (auto vert : vertices) {
+        vg.deform(vert, transform, 5);
+    }
+
+    if (vertices.size() > 0) {
+        return true;
+    }
+    return false;
+}
+void ply::deformModel(float x, float y, Matrix transform) {
+    int i = vg.pickVert(x, y);
+    vg.deform(i, transform * Vector(0, 0, -0.0005), 5);
+}
 void ply::adjustModel(bool w) {
     // For every edge, compute the force contributed by
     // the stretched or compressed edge
@@ -373,9 +404,6 @@ void ply::adjustModel(bool w) {
 
         fNorm.normalize();
 
-        //if (i == 0) ; //.print();
-        if (!isnan(fVec.length())) 
-            cout << fVec.length() << endl;
 
         Vector v1SDamping = (be * (dot(vertexList[v1].velocity, fNorm) * fNorm));
         Vector v1VDamping = (bv * (dot(vertexList[v1].velocity, fNorm) * fNorm));
@@ -396,7 +424,8 @@ void ply::adjustModel(bool w) {
 
         Vector floorForce = Vector(0, 0, 0);
         //collide with floor
-        if (vertexList[v1].y < -1) floorForce = Vector(0, -G, 0);
+        if (vertexList[v1].y < -1) floorForce = Vector(0, GRAVITY, 0);
+        if (vertexList[v1].y > 1) floorForce = Vector(0, -GRAVITY, 0);
 
         forceList[v1] = forceList[v1] + (fVec  + v1SDamping) + (v1Vec + v1VDamping) + floorForce + fv;
         forceList[v2] = forceList[v2] + (-fVec + v2SDamping) + (v2Vec + v2VDamping) + floorForce + fv;
@@ -407,7 +436,7 @@ void ply::adjustModel(bool w) {
     // Apply forces to vertices
     for (int i = 0; i < vertexCount; i++) {
         vertex v    = vertexList[i];
-        Vector g    = Vector (0, G, 0);
+        Vector g    = Vector (0, -GRAVITY, 0);
         Vector fVec = (forceList[i] + g);
 
     //    if (i == 0) asPoint(i).print();
@@ -427,7 +456,7 @@ void ply::adjustModel(bool w) {
         forceList[i] = Vector();
     }
     // Apply center forces
-    Vector fVec = centerForce + Vector(0, G, 0);
+    Vector fVec = centerForce + Vector(0, GRAVITY, 0);
     Vector a    = fVec / (M * vertexCount);
     Vector vi   = center.velocity;
     Vector vf   = vi + a * DT;
