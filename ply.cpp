@@ -290,7 +290,7 @@ void ply::render(){
             for(int j = 0; j < faceList[i].vertexCount; j++){
                                 // Get each vertices x,y,z and draw them
                 int index = faceList[i].vertexList[j];
-                glColor3f(vertexList[index].x,vertexList[index].y,fabs(vertexList[index].z));
+                glColor3f(vertexList[index].x,fabs(vertexList[index].y),fabs(vertexList[index].z));
                 glVertex3f(vertexList[index].x,vertexList[index].y,vertexList[index].z);
             }
         }
